@@ -1,0 +1,232 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Introducción a Reticulate
+
+En este documento quiero practicar algunas cosas de las que voy a ver con LangChain. En particular me gustaría probar a ver como es el programar en R y en Python. 
+
+Algunas de las ideas que me gustaría probar es usar esto, pero automatizar de alguna manera la integración de este tipo de conocimientos en mi grafo del trabajo.
+
+```{r}
+#nstall.packages('reticulate')
+```
+## La librería
+
+```{r}
+library(reticulate)
+```
+
+A la hora de trabajar con _reticulate_ tenemos que tener en cuenta que estamos trabajando a la vez con dos lenguajes de programación, que siguen reglas distintas (lo cual es confuso y no deseable) y sobretodo como tenemos que hacer para que se hablen el uno al otro. Las siguientes snipets muestran como hacer.
+
+```{r}
+#Instalación de las librerías necesarias en R
+py_install(packages = c( "langchain", 
+                         "ollama", 
+                         "pypdf", 
+                         "bs4", 
+                         "python-dotenv", 
+                         "chromadb", 
+                         "tiktoken"), 
+           envname = "langChain_test")
+```
+
+
+```{r}
+virtualenv_create(envname = "langChain_test",
+                  packages = c( "langchain", 
+                                "ollama", 
+                                "pypdf", 
+                                "bs4",
+                                "python-dotenv",
+                                "chromadb",
+                                "tiktoken"))
+```
+## Cargar el _entorno virtual_
+
+```{r}
+#Activamos el entrorno de Python
+use_virtualenv("langChain_test")
+```
+
+## Pruebas de ejecución
+```{r}
+#Probamos a ejecutar el codigo de Python en R
+reticulate::py_run_string('
+print("¡Hola Mundo!")
+')
+```
+## Pasar una variable del entorno R a Python
+
+Emmpleamos la función r_to_py() para declarar una variable en R y usarla en Python.
+```{r}
+x_py <- r_to_py(2)
+y_py <- r_to_py(5)
+```
+
+
+### IMPORTANTE R.
+
+Para utilizar esa variable en Python, tenemos que indicar que es r.NOMBRE_VARIABLE
+```{r}
+reticulate::py_run_string("
+print(r.x_py*r.y_py)
+")
+```
+Se pueden guardar las variables obtenidas en Python y ser localizadas en Py$NOMBRE_VARIABLE. Estas si estás trabajando en RStudio las puedes encontrar en Entorno, R seguida de un indicador hacia abajo para abrir el desplegable. Y ahí encontrarás las variables.
+```{r}
+reticulate::py_run_string("
+z = (r.x_py*r.y_py)
+")
+```
+
+
+Ejemplo del cálculo arriba en Python y abajo su impresión en R.
+```{r}
+py$z
+
+```
+Ejemplo de empleo de un Snipet de Python en lugar de usar _reticulate::py_run_string("")_
+
+```{python}
+suma = r.x_py + r.y_py
+
+```
+
+```{r}
+py$suma
+```
+
+# Ollama
+
+Lo siguiente que vamos a probar es a ejecutar Ollama desde R, empleando reticulate.
+
+Vamos a declarar las variables desde R
+
+```{r}
+model <- r_to_py('gemma2')
+texto <- r_to_py('¿Cual es la capital de España?')
+```
+
+Llammos a ollama y preparamos el sistema para chatear con el. Hay que tener en cuenta que exitte dos formas de usar langchain con ollama, y una de ellas esta especialmente orientada al uso del sistema para chatear. 
+```{python}
+from ollama import chat
+
+messages = [
+  {'role': 'user', 'content': r.texto},
+]
+
+```
+
+```{python}
+response = chat(model=r.model, messages=messages)
+```
+
+```{r}
+py$response$message
+```
+
+
+```{python}
+message = response['message']
+print(message['content'])
+```
+
+```{python}
+messages.append({'role': 'user', 'content': '¿Y la Portugal?'})
+response = chat(model=r.model, messages=messages)
+message = response['message']
+print(message['content'])
+messages.append(message)
+```
+
+# LangChain
+
+```{python}
+!pip install langchain-community
+```
+
+
+```{python}
+
+from langchain_community.llms import Ollama
+
+llm = Ollama(
+    model="gemma2"
+)  # assuming you have Ollama installed and have llama3 model pulled with `ollama pull llama3 `
+
+llm.invoke("Tell me a joke")
+
+```
+
+```{python}
+query = "You are an expert in regex expressions. I need to remove the numbers, the letter 'a' and spaces from strings like '001 - Aba', '002- Bars', '003-Cardo' and I need your help to create a regex expression to use in R. How do I remove the spaces? Your answers don't just eliminate the numbers."
+
+print(llm.invoke(query))
+```
+Como podemos ver no hay que fiarse mucho de las respuestas en cuestión de programación de Gemma2, si bien si que acierta con la parte de regex, a la hora de eliminar los espacios no lo usa, lo cual se podría hacer facilmente con str_trim de tidyverse.
+
+```{r}
+library(tidyverse)
+
+string <- c("001-Aba", "002- Bars", "003 - Cardo")
+
+# Regex para eliminar números y espacios
+regex <- "[0-9aA\\s-]"
+
+# Eliminar los números y espacios usando la función gsub()
+string_limpio <- gsub(regex, "", string) %>% str_trim(.)
+
+print(string_limpio)
+```
+Parece que el libro esta escrito para la v.01 y en la actualidad estamos con la 0.2
+## LangChain v.02
+
+```{python}
+!pip install langchain-cli
+!langchain-cli --version # <-- Make sure the version is at least 0.0.22
+```
+## Uso de herramientas
+
+```{python}
+from langchain_community.llms import Ollama
+
+llm = Ollama(
+    model="gemma2"
+)
+```
+
+
+```{python}
+from langchain_core.tools import tool
+
+
+@tool
+def add(a: int, b: int) -> int:
+    """Adds a and b."""
+    return a + b
+
+
+@tool
+def multiply(a: int, b: int) -> int:
+    """Multiplies a and b."""
+    return a * b
+
+
+tools = [add, multiply]
+```
+
+```{python}
+llm_with_tools = llm.bind_tools(tools)
+
+query = "What is 3 * 12?"
+
+llm_with_tools.invoke(query)
+```
+```{r}
+library(reticulate)
+use_virtualenv("langChain_test")
+```
+
+
