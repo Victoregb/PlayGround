@@ -22,3 +22,7 @@ Sys.sleep(2)
 toc()
 ```
 
+```{r}
+print(4)
+```
+
