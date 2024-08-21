@@ -21,8 +21,12 @@ Sys.sleep(2)
 
 toc()
 ```
-
+# Comprobar que una libreria que se va a ejecutar esta instalada
 ```{r}
-print(4)
+
+if (require("beepr")!=TRUE) {
+  install.packages("beepr")
+}
+
 ```
 
