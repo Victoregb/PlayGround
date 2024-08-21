@@ -1,0 +1,12 @@
+---
+title: "Probando_IAs"
+author: "Victor E. Gil-Biraud"
+date: "2024-08-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+

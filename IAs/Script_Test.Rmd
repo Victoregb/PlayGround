@@ -1,0 +1,24 @@
+---
+title: "Script_test"
+author: "Victor E. Gil-Biraud"
+date: "2024-08-21"
+output: html_document
+---
+
+# Como usar la linea de comandos desde un script de R.
+```{r}
+system2(command = "C://Program Files/Inkscape/bin/inkscape.com",
+        args = c('--export-type="svg"',
+                 './total_rural_net.pdf'))
+```
+
+# Medir el tiempo de ejecución.
+```{r}
+library(tictoc)
+
+tic("Prueba:")
+Sys.sleep(2)
+
+toc()
+```
+
