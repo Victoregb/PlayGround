@@ -5,6 +5,7 @@ date: "2024-08-21"
 output: html_document
 ---
 
+
 # Como usar la linea de comandos desde un script de R.
 ```{r}
 system2(command = "C://Program Files/Inkscape/bin/inkscape.com",
@@ -28,5 +29,14 @@ if (require("beepr")!=TRUE) {
   install.packages("beepr")
 }
 
+```
+# Una solución un poco más currada y elegante qur la anterior.
+```{r}
+lista_paquetes <- c("lavaan", "tidyverse")
+for (i in seq(1:length(lista_paquetes))) {
+  if (require(lista_paquetes[[i]], character.only = TRUE) != TRUE){
+    install.packages(i)
+  }
+}
 ```
 
