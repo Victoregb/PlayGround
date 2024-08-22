@@ -22,6 +22,20 @@ Sys.sleep(2)
 
 toc()
 ```
+
+
+# Beepr
+```{r}
+# Si lo metemos en un bucle queda una solución un poco mejor.
+library(beepr)
+for (i in seq(1,3,1)){
+  beep(2)
+  Sys.sleep(.5)
+}
+```
+
+
+
 # Comprobar que una libreria que se va a ejecutar esta instalada
 ```{r}
 
