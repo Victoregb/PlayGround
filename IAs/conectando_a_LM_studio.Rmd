@@ -1,0 +1,114 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+# Instalar y cargar el paquete httr2 si aún no está instalado
+if (!requireNamespace("httr2", quietly = TRUE)) {
+  install.packages("httr2")
+}
+if (!requireNamespace("jsonlite", quietly = TRUE)) install.packages("jsonlite")
+library(httr)
+library(jsonlite)
+```
+
+
+```{r}
+# Función para enviar un prompt a LM Studio y obtener la respuesta
+send_prompt_to_lm_studio <- function(identity, question, temperature = 0.7, max_tokens = 150, api_url = "http://localhost:1234/v1/chat/completions") {
+  # Preparar los datos del prompt
+  data <- list(
+    model = "local-model", # Ajusta esto según sea necesario
+    messages = list(
+      list(role = "system", content = paste("Asume la siguiente identidad:", identity)),
+      list(role = "user", content = question)
+    ),
+    temperature = temperature,
+    max_tokens = max_tokens
+  )
+  
+  # Realizar la solicitud POST
+  response <- POST(
+    url = api_url,
+    body = toJSON(data, auto_unbox = TRUE),
+    add_headers("Content-Type" = "application/json")
+  )
+  
+  # Verificar si la solicitud fue exitosa
+  if (status_code(response) == 200) {
+    content <- content(response, "parsed")
+    return(content$choices[[1]]$message$content)
+  } else {
+    stop("Error en la solicitud: ", status_code(response))
+  }
+}
+
+```
+
+
+```{r}
+# Generar datos aleatorios
+n <- 6
+set.seed(123)
+genero <- sample(c("una mujer", "un hombre", "una persona no-binaria"), prob = c(.495, .495, .01), n, replace = TRUE)
+edad <- sample(18:80, n, replace = TRUE)
+estudios <- sample(c("Primaria", "Secundaria", "Bachillerato", "Universidad"), prob = c(.009, .074, .081, .836), n, replace = TRUE)
+entorno <- sample(c("rural", "urbano"), prob = c(.31, .69), n, replace = TRUE)
+
+# Crear un data frame con los datos
+df2 <- data.frame(
+  Genero = genero,
+  Edad = edad,
+  Estudios = estudios,
+  Entorno = entorno
+)
+```
+
+
+
+```{r}
+# Usar la función con tus datos
+question <- "¿Qué es para ti el patrimonio?"
+
+# Función para generar respuestas para cada identidad
+generar_respuestas <- function(df, temperature = 0.2, max_tokens = 500) {
+  respuestas <- vector("list", nrow(df))
+      
+  for (i in 1:nrow(df)) {
+    identity <- paste0(
+      "Eres ", df$Genero[i], ", de ", df$Edad[i], " años de edad con estudios ", 
+      df$Estudios[i], " que reside en un entorno ", df$Entorno[i], " en España."
+    )
+    
+    # Puedes ajustar la temperatura y max_tokens aquí
+    respuestas[[i]] <- send_prompt_to_lm_studio(identity, question, temperature = temperature, max_tokens = max_tokens)
+    # Imprimir progreso
+    cat("Procesado", i, "de", nrow(df), "\n")
+  }
+  
+  return(respuestas)
+}
+```
+
+```{r}
+
+
+# Generar respuestas
+df2$Respuestas <- generar_respuestas(df2)
+df2$temperature <- 0.2
+df2$max_tokens <- 500
+
+# Mostrar algunas respuestas como ejemplo
+head(df, 3)
+```
+
+
+```{r}
+df
+```
+
+```{r}
+send_prompt_to_lm_studio(identity = "Experto en Geografía.",question='¿Cual es la capital de Madrid?', temperature = 0.8, max_tokens = 500)
+```
+
